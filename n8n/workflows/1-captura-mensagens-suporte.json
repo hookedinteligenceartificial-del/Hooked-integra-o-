@@ -1,0 +1,127 @@
+{
+  "name": "Suporte - Captura de Mensagens (Base de Conhecimento)",
+  "nodes": [
+    {
+      "id": "86b5600f-bb32-4ef3-af60-a69f1b281742",
+      "name": "Recebe Mensagem do Bot de Suporte",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "notes": "Adicione um node \"Execute Workflow\" no final do workflow do bot de atendimento (Evolution API), apontando para este workflow, em modo \"fire and forget\", passando o mesmo item recebido do webhook do Evolution. Assim este fluxo roda em paralelo sem mexer no bot principal."
+    },
+    {
+      "id": "9d3cc4ce-331c-4c9d-a56e-4892db0f9860",
+      "name": "Normalizar e Preparar Insert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nfunction extractText(message) {\n  if (!message) return '';\n  return (\n    message.conversation ||\n    message.extendedTextMessage?.text ||\n    message.imageMessage?.caption ||\n    message.videoMessage?.caption ||\n    message.buttonsResponseMessage?.selectedDisplayText ||\n    message.listResponseMessage?.title ||\n    ''\n  ).trim();\n}\n\nconst item = $input.item.json;\nconst data = item.data || item;\nconst key = data.key || {};\nconst msg = data.message || {};\n\nconst messageText = extractText(msg);\nconst messageId = key.id || null;\nconst conversationId = key.remoteJid || null;\nconst contactName = data.pushName || null;\nconst isSupport = key.fromMe === true;\nconst messageTimestamp = data.messageTimestamp\n  ? new Date(Number(data.messageTimestamp) * 1000).toISOString()\n  : new Date().toISOString();\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(messageId)}, ${esc(conversationId)}, ${esc(contactName)}, ${isSupport ? 'TRUE' : 'FALSE'}, ${esc(messageText)}, ${esc(messageTimestamp)})\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn {\n  json: {\n    message_id: messageId,\n    conversation_id: conversationId,\n    contact_name: contactName,\n    is_support: isSupport,\n    message_text: messageText,\n    message_timestamp: messageTimestamp,\n    sql_query: sqlQuery,\n  },\n};"
+      }
+    },
+    {
+      "id": "2ddadfc9-4c54-41df-9a3f-0d191af80d6a",
+      "name": "Somente Texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "e73b6843-6cfd-4f47-88d6-f306577213b7",
+              "leftValue": "={{ $json.message_text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bc9a7b4c-c0bf-4f28-9b3b-373ab74bbaa5",
+      "name": "Salvar Mensagem",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        900,
+        220
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql_query }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUA_PELO_ID_DA_CREDENCIAL",
+          "name": "Postgres - Hooked Sistemas"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Recebe Mensagem do Bot de Suporte": {
+      "main": [
+        [
+          {
+            "node": "Normalizar e Preparar Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar e Preparar Insert": {
+      "main": [
+        [
+          {
+            "node": "Somente Texto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Somente Texto?": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
