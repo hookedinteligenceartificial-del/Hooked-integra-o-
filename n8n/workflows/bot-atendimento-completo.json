@@ -1005,11 +1005,11 @@
       },
       "credentials": {
         "postgres": {
-          "id": "FGJQ1M5xtJWw9N9n",
-          "name": "Postgres account"
+          "id": "SUBSTITUA_PELO_ID_DA_CREDENCIAL",
+          "name": "Postgres - Base de Conhecimento (host novo)"
         }
       },
-      "notes": "Roda 1x por dia, isolado do webhook do bot — não compete com a conexão do Postgres Chat Memory durante o atendimento ao vivo."
+      "notes": "Roda 1x por dia, isolado do webhook do bot. Aponta para um Postgres NOVO E SEPARADO (host próprio, dedicado só à base de conhecimento) — não é o mesmo banco do Postgres Chat Memory. Depois de importar, crie a credencial desse novo host no n8n e selecione aqui."
     },
     {
       "id": "07f61c84-5ac3-42d4-b131-5531dea698d0",

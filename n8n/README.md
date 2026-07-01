@@ -67,9 +67,12 @@ fora da conversa — e grava `question`, `answer` e `category` na planilha.
 
 ## Pré-requisitos
 
-1. **Postgres**: rode `n8n/sql/schema.sql` uma vez no mesmo banco que o
-   "Postgres Chat Memory1" já usa (cria a tabela `support_messages`, usada
-   agora só como arquivo histórico, lido apenas pelo job noturno).
+1. **Um Postgres novo e separado** (host próprio, diferente do banco que o
+   "Postgres Chat Memory1" usa) — dedicado só para a base de conhecimento,
+   pra nunca competir com o banco do atendimento ao vivo. Rode
+   `n8n/sql/schema.sql` uma vez nesse banco novo (cria a tabela
+   `support_messages`, usada só como arquivo histórico, lido apenas pelo job
+   noturno).
 2. **Uma planilha Google Sheets nova**, com a primeira linha assim:
 
    | question | answer | category |
@@ -79,16 +82,19 @@ fora da conversa — e grava `question`, `answer` e `category` na planilha.
 
 1. Importe `bot-atendimento-completo.json` no n8n (ele substitui/atualiza o
    workflow do bot — confira se é isso que você quer antes de sobrescrever).
-2. Nos nodes novos do Postgres (**"Arquivar Mensagens (Postgres)"**) e Redis
-   (**"Guardar Mensagem no Log (Redis)"**, **"Buscar Mensagens do Log
-   (Redis)"**, **"Limpar Log (Redis)"**), confira se a credencial bateu
-   certo — vêm apontadas para as mesmas contas ("Postgres account" e "Redis
-   account") já usadas no resto do workflow.
-3. No node **"Salvar Pergunta e Resposta (Sheets)"**: abra e selecione a
+2. Crie no n8n uma credencial Postgres nova apontando pro seu host separado,
+   e selecione ela no node **"Arquivar Mensagens (Postgres)"** (vem com
+   placeholder "SUBSTITUA_PELO_ID_DA_CREDENCIAL").
+3. Nos 3 nodes de Redis (**"Guardar Mensagem no Log (Redis)"**, **"Buscar
+   Mensagens do Log (Redis)"**, **"Limpar Log (Redis)"**), confira se a
+   credencial bateu certo — vêm apontadas para a mesma "Redis account" já
+   usada no resto do workflow (esse Redis continua sendo o mesmo, só o
+   Postgres de destino que agora é separado).
+4. No node **"Salvar Pergunta e Resposta (Sheets)"**: abra e selecione a
    sua planilha nova no seletor (os valores no JSON são só placeholder). A
    credencial do Google já vem preenchida com a mesma conta ("Google cloud
    todos") que o node "base de conhecimento" já usa.
-4. Ative o workflow e acompanhe uma execução real (ou clique em "Test
+5. Ative o workflow e acompanhe uma execução real (ou clique em "Test
    workflow" e mande uma mensagem de teste pelo WhatsApp) pra confirmar que
    nenhum node fica "carregando" — hoje, em tempo real, só roda Code +
    Redis, então não deve mais travar.
