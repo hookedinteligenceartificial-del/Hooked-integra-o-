@@ -1,97 +1,97 @@
-# Suporte - Base de Conhecimento a partir das conversas do bot
+# Bot de Atendimento + Base de Conhecimento (Google Sheets)
 
-Este diretório contém dois workflows do n8n que, **juntos**, capturam as
-conversas reais entre o suporte e os clientes (via Evolution API) e deixam
-você perguntar, por chat com IA, quais são as dúvidas mais frequentes.
+`n8n/workflows/bot-atendimento-completo.json` é o **seu workflow de
+atendimento atual** (o mesmo que você já usa em produção — Webhook, Switch,
+buffer no Redis, bloqueio quando o suporte responde manualmente, AI Agent
+com Gemini, envio pela Evolution API etc.) **com os nodes novos já
+adicionados e conectados**, para parar de depender de você mesmo ligar os
+fios entre dois workflows separados.
 
-| Workflow | O que faz | Como é acionado |
-|---|---|---|
-| `1-captura-mensagens-suporte.json` | Recebe cada mensagem (sua e do cliente) e grava em `support_messages` | Webhook, em tempo real, 1x por mensagem |
-| `2-consultar-duvidas-frequentes.json` | Abre um chat onde você pergunta (ex: "quais as dúvidas mais frequentes esse mês?") e uma IA (Gemini) analisa as mensagens dos clientes e responde | Chat, sob demanda |
+Nada do que já existia foi alterado ou removido — só foram adicionados
+nodes novos, em paralelo, nos pontos certos.
+
+## O que foi adicionado
+
+### 1. Captura de toda mensagem (suporte x cliente) — tempo real
+
+O node **"from me?1"** já existente separa `fromMe = true` (mensagem seu,
+suporte) de `fromMe = false` (mensagem do cliente). Foram adicionados dois
+novos ramos, em paralelo com o que já existia:
+
+- Saída **TRUE** → também vai para **"Preparar Log (Suporte)"**
+- Saída **FALSE** → também vai para **"Preparar Log (Cliente)"**
+
+Os dois alimentam o mesmo node **"Salvar Mensagem (Base de Conhecimento)"**
+(Postgres), que grava cada mensagem em uma tabela `support_messages`, já
+marcando corretamente quem enviou.
+
+Isso roda no fluxo principal, mensagem por mensagem, sem atrasar nem mudar a
+resposta ao cliente — é só um "espelho" gravando em paralelo.
+
+### 2. Mineração diária + gravação no Google Sheets
+
+Um segundo gatilho, independente do Webhook, roda 1x por dia (02:00):
+
+```
+Gerar Base de Conhecimento (Diário)  [Schedule Trigger]
+  → Definir Janela de Busca            (Code: lembra até onde já processou)
+  → Buscar Mensagens Novas              (Postgres: só o que é novo desde a última vez)
+      → Agrupar em Sessões de Atendimento   (Code: agrupa por conversa/tempo)
+          → Agente Extrator de Perguntas Frequentes  (reaproveita o MESMO
+            Google Gemini Chat Model que o bot principal já usa)
+          → Parsear Respostas da IA
+          → Salvar Pergunta e Resposta (Sheets)
+      → Atualizar Marca D'água          (lembra até onde processou, pra não repetir)
+```
+
+A IA olha o transcript de cada conversa (rotulado "Cliente:"/"Suporte:") e
+extrai só as dúvidas técnicas reais com resposta útil — sem inventar nada
+que não esteja na conversa, ignorando saudação, cobrança etc. — e grava
+`question`, `answer` e `category` na sua planilha.
 
 ## Pré-requisitos
 
-1. Uma tabela Postgres — rode `n8n/sql/schema.sql` uma vez no seu banco (cria
-   `support_messages`).
-2. Uma credencial **Postgres** cadastrada no n8n.
-3. Uma credencial **Google Gemini (PaLM) API** cadastrada no n8n (a mesma que
-   você já usa no bot de atendimento).
+1. **Postgres**: rode `n8n/sql/schema.sql` uma vez no mesmo banco que você
+   já usa para o "Postgres Chat Memory1" (cria a tabela `support_messages`).
+   Não precisa de extensão nenhuma, é só Postgres normal.
+2. **Uma planilha Google Sheets nova**, com a primeira linha assim:
 
-## Passo a passo
+   | question | answer | category |
+   |---|---|---|
 
-### 1. Importar os workflows
+   Essa é a planilha "que você vai cadastrar" — pode ser separada da
+   planilha "base de conhecimento" que o bot já usa hoje para responder
+   (aquela é a fonte que o bot lê para responder o cliente; esta nova é o
+   destino onde a IA grava o que aprendeu das conversas reais). Depois, se
+   quiser, você mesmo revisa e copia as melhores linhas para a planilha que
+   o bot usa para responder.
 
-`Workflows > Import from File` e importe os dois arquivos desta pasta.
-Depois de importar, abra cada node **Postgres** e o node **Google Gemini Chat
-Model** e selecione suas próprias credenciais (os IDs no JSON são só
-placeholders, não vêm preenchidos).
+## Passo a passo depois de importar
 
-### 2. Ligar a captura ao fluxo do bot de atendimento
-
-O workflow `1-captura-mensagens-suporte.json` tem seu **próprio Webhook**
-(node "Receber Mensagem (Evolution API)"), então ele recebe o mesmo formato
-de payload que o seu bot principal recebe (`messages.upsert` da Evolution
-API, com os dados em `body.data`).
-
-Para ele também receber as mensagens, você tem duas opções:
-
-- **Opção A (mais simples):** se o seu provedor/instância Evolution API
-  permitir configurar mais de uma URL de webhook para o mesmo evento,
-  adicione a URL deste novo workflow como uma segunda URL.
-- **Opção B:** no workflow do bot de atendimento já existente, logo depois do
-  node "Webhook" original, adicione um node **HTTP Request** (POST) apontando
-  para a URL deste novo webhook, repassando o mesmo `body` recebido. Assim
-  toda mensagem que chega no bot principal é espelhada para cá também, sem
-  depender de configuração no Evolution API.
-
-Ative o workflow (toggle "Active") para o webhook ficar no ar.
-
-### 3. Usar o chat de dúvidas frequentes
-
-Ative também o workflow `2-consultar-duvidas-frequentes.json` e abra o chat
-dele (botão "Chat" no editor do n8n, ou a URL pública do Chat Trigger). Pergunte,
-por exemplo:
-
-- "Quais são as 5 dúvidas mais comuns dos clientes essa semana?"
-- "Os clientes têm reclamado de quê?"
-- "Como o suporte costuma responder quando perguntam sobre justificar falta?"
-
-O agente busca as últimas 500 mensagens **enviadas pelos clientes** (não as
-suas) em `support_messages`, e a IA agrupa as parecidas e resume.
-
-## Como funciona por dentro
-
-**Workflow 1** — por mensagem:
-`Webhook → Code (normaliza o payload e monta o INSERT) → IF "Tem Texto?"
-(descarta áudio/figurinha sem legenda) → IF "Suporte ou Cliente?" (separa
-pelo campo fromMe: true = você, false = cliente) → Postgres (grava em
-support_messages, já marcando is_support corretamente)`.
-
-O segundo IF ("Suporte ou Cliente?") hoje leva as duas saídas para o mesmo
-node de insert — a coluna `is_support` já vem certa desde o node de
-normalização. Ele foi deixado explícito no fluxo (em vez de eliminado) para
-você poder plugar ali, no futuro, uma ação diferente por tipo de mensagem
-(por exemplo, disparar um alerta só quando é o cliente que escreve).
-
-**Workflow 2** — sob demanda, quando você pergunta no chat:
-`Chat Trigger → Postgres (busca as últimas 500 mensagens de clientes) → Code
-(formata como lista numerada com data) → AI Agent (Gemini + memória de
-conversa), que recebe essa lista no system message e responde sua pergunta`.
-
-Não há geração de embeddings nem tabela separada de FAQ — a IA lê o histórico
-bruto de mensagens do cliente a cada pergunta seu e faz o agrupamento/análise
-na hora. Isso é mais simples de manter, mas cada pergunta no chat manda até
-500 mensagens de contexto para o Gemini; se o volume de mensagens crescer
-muito, considere reduzir o `LIMIT 500` da query ou filtrar por período
-(`WHERE message_timestamp > now() - interval '30 days'`).
+1. Importe `bot-atendimento-completo.json` no n8n (ele substitui/atualiza o
+   workflow do bot — confira se é isso que você quer antes de sobrescrever o
+   atual).
+2. Nos dois nodes novos do Postgres (**"Salvar Mensagem (Base de
+   Conhecimento)"** e **"Buscar Mensagens Novas"**), a credencial já vem
+   apontada para "Postgres account" (a mesma que o "Postgres Chat Memory1"
+   usa) — confira se o ID bateu certo depois de importar; se não, selecione
+   de novo.
+3. No node **"Salvar Pergunta e Resposta (Sheets)"**: abra o node e, no
+   campo de planilha/aba, **selecione a sua nova planilha** de Perguntas e
+   Respostas (os valores que vieram no JSON são só placeholder). A
+   credencial do Google já vem preenchida com a mesma conta ("Google cloud
+   todos") que o node "base de conhecimento" já usa.
+4. Ative o workflow.
 
 ## Ajustes que você provavelmente vai querer revisar
 
-- **Quantas mensagens de cliente entram no contexto da IA**: `LIMIT 500` no
-  node "Buscar Mensagens de Clientes" (workflow 2).
-- **Modelo do Gemini**: `models/gemini-2.0-flash` no node "Google Gemini Chat
-  Model". Troque se preferir outro modelo da família Gemini.
-- **Tom/instruções da IA**: `systemMessage` no node "Agente de Perguntas
-  Frequentes".
-- **Caminho do webhook**: `captura-suporte` no node "Receber Mensagem
-  (Evolution API)" (workflow 1) — mude se esse path já estiver em uso.
+- **Horário da mineração diária**: `0 2 * * *` no node "Gerar Base de
+  Conhecimento (Diário)".
+- **Prompt de extração**: `systemMessage` no node "Agente Extrator de
+  Perguntas Frequentes".
+- **Deduplicação na planilha**: o node de Sheets usa "Update or append"
+  casando pela coluna `question` — perguntas com o texto idêntico ao de uma
+  linha já existente atualizam a resposta em vez de duplicar linha;
+  variações de escrita da mesma dúvida ainda podem gerar linhas parecidas
+  (a IA tenta generalizar a pergunta, mas não é perfeito) — vale uma
+  revisada de vez em quando.

@@ -1,0 +1,1563 @@
+{
+  "name": "My workflow copy",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "08471d6f-fea2-4b4d-9ae4-fa7bd9882d36",
+              "name": "instance",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "1a5faeb8-d3b0-4262-91c2-93e1cf93539b",
+              "name": "remotejid",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "ecf9e931-2e3d-4a97-99c9-fc2a6a4a6e9d",
+              "name": "id",
+              "value": "={{ $json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f2f6bcf9-690f-4169-a560-8647796c624f",
+              "name": "FromMe",
+              "value": "={{ $json.body.data.key.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "72a88f63-51c6-4b39-a621-225779b5e7ee",
+              "name": "coversation",
+              "value": "={{ $json.body.data.message.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "72b8ad64-2695-40da-9f6c-0810ae9236ec",
+              "name": "messageType",
+              "value": "={{ $json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "a46260dc-94af-431a-a844-56afac5f0515",
+              "name": "pushName",
+              "value": "={{ $json.body.data.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "6c55443d-bf3a-497e-8efa-a10d5b08ed19",
+              "name": "image message",
+              "value": "={{ $json.body.data.message.imageMessage.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        1520
+      ],
+      "id": "0ccbe40b-5187-480b-bd9d-4c237e5107a9",
+      "name": "dados"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "Você é um atendente virtual de suporte da Hooked Sistemas responsável pelo sistema de ponto e atende clientes via WhatsApp.\nSeu objetivo é responder clientes de forma rápida, humana e objetiva, focando somente na dúvida atual.\n\nPRINCÍPIO MAIS IMPORTANTE\nVocê só considera o que foi dito na conversa atual.\nNunca:\nmencionar problemas antigos\nmencionar chamados passados\nmencionar histórico do cliente\nusar informações de atendimentos anteriores\nCada conversa é tratada como um novo atendimento.\n\nESTILO DE RESPOSTA\nLinguagem humana e natural.\nTom de conversa de WhatsApp.\nMensagens curtas.\nNada robótico.\nNada formal demais.\nEvitar:\ntextos grandes\nrespostas em bloco\nlinguagem técnica excessiva\nparecer um robô\nPreferir:\nfrases simples\ncomunicação direta\nclareza\n\nLIMITE DE TAMANHO\nRegra obrigatória:\nMáximo ideal: 1–3 frases por mensagem.\nMáximo aceitável: 5 linhas curtas.\nSe precisar explicar algo maior → quebrar em mais de uma mensagem.\nNunca mandar “textão”.\n\nINÍCIO DO ATENDIMENTO\nFluxo inicial:\nCumprimentar de forma natural.\nOi, boa tarde! Tudo bem?\n\nPode me passar o CNPJ da empresa pra eu começar seu atendimento, por favor? 😊\n\nInclusive, estamos com uma promoção especial no nosso ERP que ajuda a automatizar financeiro, estoque, emissão de notas e muitos outros processos... \n\nPara garantir a promoção clique no link: https://superoferta.hooked.com.br\nApós receber o CNPJ:\nagradecer\npedir a dúvida atual\nExemplos:\n“Obrigado! Qual dúvida você está tendo no sistema de ponto?”\n“Perfeito. Me conta o que está acontecendo.”\nNão usar sempre a mesma frase. Variar.\n\nIDENTIFICAÇÃO DO TÉCNICO\nO técnico de ponto se chama Arthur.\nSe o cliente mencionar “Arthur”, está falando do técnico.\nNunca explicar isso ao cliente.\n\nDURANTE O ATENDIMENTO\nSempre seguir:\nEntender a dúvida atual.\nConsultar base de conhecimento (use tool: base de conhecimento).\nResponder de forma direta.\nSe existir tutorial ou vídeo:\nenviar apenas se realmente ajudar na dúvida\nmandar junto com frase curta explicando\nExemplo:\n“Esse vídeo mostra certinho como fazer.”\n(link)\nNunca:\njogar vários links\nmandar vídeo sem contexto\n\nQUANDO NÃO SOUBER A RESPOSTA\nNunca dizer:\n“não encontrei na base”\n“não sei”\n“não tenho essa informação”\nSempre encaminhar de forma natural:\nExemplos:\n“Vou repassar isso pro técnico verificar pra você.”\n“Deixa comigo, vou encaminhar pro suporte técnico.”\n“O técnico vai analisar isso e te retorno.”\n\nESCALONAMENTO\nEncaminhar para técnico quando:\nerro específico\nsistema não responde\nproblema técnico real\ndúvida fora da base\ncliente irritado\ncliente insiste após orientação\n\nHUMANIZAÇÃO FORTE\nVocê conversa como pessoa real.\nPode usar:\n“Perfeito”\n“Entendi”\n“Vamos lá”\n“Pode deixar”\n“Já vejo isso pra você”\nPode usar emoji leve e pontual:\n👍\n😊\n👇\nNão exagerar.\n\nCONTROLE DE REPETIÇÃO\nNunca repetir exatamente a mesma frase enviada antes.\nSempre variar:\nforma de pedir CNPJ\nforma de perguntar a dúvida\nforma de encaminhar pro técnico\n\nCASOS COMUNS\n\nCliente manda só “oi”\nResponder:\ncumprimentar\npedir CNPJ\n\nCliente manda áudio\nResponder:\navisar que vai analisar\npedir CNPJ se ainda não tiver\nExemplo:\n“Já ouvi aqui.\nPode me passar o CNPJ da empresa?”\n\nCliente manda imagem\nResponder:\nconfirmar que vai verificar\npedir CNPJ se ainda não tiver\n\nCliente confuso\nGuiar com perguntas curtas:\n“Isso acontece ao bater o ponto?”\n“Aparece alguma mensagem na tela?”\n\nCliente irritado\nmanter calma\nser objetivo\npriorizar encaminhar ao técnico\nExemplo:\n“Entendi. Vou encaminhar isso direto pro técnico pra resolver o mais rápido possível.”\n\nHORÁRIO DE ATENDIMENTO\nSegunda a sexta:\n08:00 às 11:48\n13:00 às 18:00\nSe mensagem fora do horário:\nverificar hora atual na ferramenta\nse fora do expediente:\nResponder:\n“Oi! No momento estamos fora do horário de atendimento.\nAtendemos das 08:00 às 11:48 e das 13:00 às 18:00, de segunda a sexta.\nAssim que voltarmos, seguimos com seu atendimento.”\n\nPROIBIÇÕES IMPORTANTES\nNunca:\npuxar assunto antigo\nmencionar histórico\nmandar textão\nparecer script robótico\nresponder seco\nignorar cliente\nser desrespeitoso\n\nCOMPORTAMENTO IDEAL\nVocê é:\nrápido\nhumano\ndireto\nútil\nVocê não é:\nrobô\nsuporte frio\ncopiador de script\n\nREGRA FINAL (A MAIS IMPORTANTE)\nSe a resposta estiver:\nlonga demais → encurtar\ntécnica demais → simplificar\nrobótica → humanizar\nbaseada em histórico → apagar e refazer\nSempre priorize clareza + naturalidade + objetividade.\n\nBLOQUEIO DE ALUCINAÇÃO (OBRIGATÓRIO NO PROMPT)\nREGRA CRÍTICA — NUNCA INVENTAR SOLUÇÃO\n\nVocê não pode criar:\npasso a passo\nnomes de telas\nnomes de botões\ncaminhos dentro do sistema\nprocedimentos técnicos\nse essas informações não estiverem claramente na base de conhecimento.\n\nÉ proibido “tentar ajudar mesmo assim”.\nSe não estiver na base → NÃO RESPONDER COM SOLUÇÃO.\n\nFLUXO OBRIGATÓRIO DE DECISÃO\n\nSempre seguir exatamente esta ordem:\n\nCliente explicou a dúvida\nVocê consulta a base de conhecimento\n\nAgora existem apenas 2 cenários possíveis:\n\nCENÁRIO 1 — EXISTE NA BASE\n\nResponder usando somente o que está na base.\nNão adicionar nada próprio.\nNão completar com suposições.\nNão adaptar processo.\nPode:\nresumir\nsimplificar\ndeixar mais humano\nNão pode:\nalterar instruções\ninventar etapas\n\nCENÁRIO 2 — NÃO EXISTE NA BASE\n\nVocê NÃO PODE:\nsugerir tentativa\ninventar solução\ncriar passo a passo\n“achar que deve ser assim”\nusar lógica própria\n\nVocê DEVE:\nEncaminhar para técnico imediatamente.\n\nExemplos:\n“Vou repassar isso pro técnico verificar pra você.”\n“Esse caso preciso encaminhar pro suporte técnico.”\n“O técnico vai analisar e te retorno.”\n\nSem explicar que não encontrou na base.\n\nREGRA DE SEGURANÇA\nSe existir qualquer dúvida se a informação está correta:\n→ NÃO RESPONDA COM SOLUÇÃO\n→ ENCAMINHE PARA O TÉCNICO\n\nPROIBIÇÃO ABSOLUTA\nNunca usar frases como:\n“provavelmente”\n“geralmente é”\n“tente fazer isso”\n“deve resolver”\n“normalmente funciona assim”\n“acho que”\n\nIsso é sinal de invenção.\n\nCOMPORTAMENTO CORRETO DO AGENTE\nO agente não é técnico.\nEle é:\nfiltro\ndirecionador\nleitor de base\nQuem resolve é:\nbase de conhecimento\ntécnico humano\n\nREGRA FINAL (A MAIS IMPORTANTE DO SISTEMA)\nÉ melhor encaminhar 10 casos para o técnico do que inventar 1 solução errada.\nErro por invenção é crítico.\nEncaminhamento não é erro.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3936,
+        1584
+      ],
+      "id": "27b36395-a830-46e2-8b21-cc58149ca239",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3888,
+        1872
+      ],
+      "id": "76d1a292-98c2-40cd-a497-674f8522c8a2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "4KeFlrxd5i4ufYFb",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} block",
+        "value": "true",
+        "expire": true,
+        "ttl": 3600
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        1328
+      ],
+      "id": "dbb5cd01-9b6b-4420-910d-443cce8debaf",
+      "name": "criar chave block",
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "ai",
+              "message": "={{ $('message1').item.json.message }}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        2112,
+        1216
+      ],
+      "id": "70bc0b1f-4b6f-43d0-9514-cd370097e0b6",
+      "name": "inserir mensagem de atendente"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "isbloked",
+        "key": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} block",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        1520
+      ],
+      "id": "a47670e7-bd59-4a98-885b-3115fa31606c",
+      "name": "buscar chave block",
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3fb344df-69a9-4d6f-898d-f8d61e54123c",
+              "leftValue": "={{ $json.isbloked }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2096,
+        1520
+      ],
+      "id": "9eac0c37-f634-4fa5-946a-d4f36016853b",
+      "name": "is bloked?"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "user",
+              "message": "={{ $('message1').item.json.message }}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        2064,
+        1904
+      ],
+      "id": "9fb55df0-0771-4239-a231-be275d86c0b3",
+      "name": "inserir mensagem"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} chats",
+        "contextWindowLength": 6
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        4096,
+        2000
+      ],
+      "id": "b5a8f1a9-b8ab-48a7-9df6-0181da721aa6",
+      "name": "Postgres Chat Memory1",
+      "credentials": {
+        "postgres": {
+          "id": "FGJQ1M5xtJWw9N9n",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        4272,
+        1984
+      ],
+      "id": "e2de9dfe-ebfb-4502-871e-b623178800ea",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} temp",
+        "messageData": "={{ $('message1').item.json.message }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        1616
+      ],
+      "id": "7b14f0fc-d923-40a8-a404-5f7f341c5190",
+      "name": "lista temporaria",
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2576,
+        1616
+      ],
+      "id": "7430e920-36ad-4159-b0aa-5b27f9467704",
+      "name": "Wait1",
+      "webhookId": "f6660a11-4d33-400d-b7bc-a6edf75dbf3f"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "messages",
+        "key": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} temp",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2784,
+        1616
+      ],
+      "id": "66d5212f-7039-455c-aa92-f5c2b6da8469",
+      "name": "buscar lista temporaria",
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c0779288-7481-4e2c-93b0-eadf62b07758",
+              "leftValue": "={{ $json.messages.last() }}",
+              "rightValue": "={{ $('message1').item.json.message }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2992,
+        1616
+      ],
+      "id": "5704acb4-d3fe-430a-ac6b-0874a8d3af2a",
+      "name": "ultima mensagem?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('dados').item.json.instance }} {{ $('dados').item.json.remotejid }} temp"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3232,
+        1600
+      ],
+      "id": "1d9423d7-8aeb-44ce-a501-08a4a63f31ec",
+      "name": "deletar lista",
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eadf5587-4215-42f1-885c-fc33875b2548",
+              "name": "message",
+              "value": "={{ $json.messages.join(\" \") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3440,
+        1600
+      ],
+      "id": "7c5da4a0-8976-485c-bb3b-8d3dd4609302",
+      "name": "mensagem final"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('dados').item.json.instance }}",
+        "remoteJid": "={{ $('dados').item.json.remotejid }}",
+        "messageText": "={{ $json.output }}",
+        "options_message": {
+          "delay": 1000,
+          "linkPreview": true
+        }
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        4320,
+        1584
+      ],
+      "id": "39355e0a-347c-4936-8a3f-934b11bdf24b",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "Hvs2xgPme5WfvoYN",
+          "name": "Evolution account ponto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e77605a4-e82d-41cb-8f82-39d17415a798"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8b343a72-5be6-44e3-8cff-b24d57210063",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c240f30f-c305-4bb6-b93d-a2eeacec5d34",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "imageMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        1520
+      ],
+      "id": "33c70772-b39c-4a50-8e8c-9c977e48484b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "49c94f3c-ebac-401a-bb76-6c5938462c5d",
+              "name": "message",
+              "value": "={{ $('dados').item.json.coversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        1520
+      ],
+      "id": "1aeaeae9-6aa0-4f7e-a9df-ed47d91e84f1",
+      "name": "set text message1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea39b59a-ded7-4567-9806-3c8073a5ae1b",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        1520
+      ],
+      "id": "c2984724-3cfe-4069-b0f5-542a711fb755",
+      "name": "message1"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $json.instance }}",
+        "messageId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        2096
+      ],
+      "id": "0b29d3ca-d5e8-45e1-9372-3e6570c77be5",
+      "name": "Obter m dia em base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "Hvs2xgPme5WfvoYN",
+          "name": "Evolution account ponto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        2096
+      ],
+      "id": "29647f78-c9f2-4548-b623-e34883aa16c9",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-large-v3-turbo"
+            },
+            {
+              "name": "temperature",
+              "value": "0"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "name": "language",
+              "value": "pt"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1936,
+        2112
+      ],
+      "id": "b9d418eb-27d2-4d75-95b7-eb930d574385",
+      "name": "HTTP Request",
+      "credentials": {
+        "groqApi": {
+          "id": "9WccEtahbxrkUfoG",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7607d967-03dd-4469-b032-3c3791059f6f",
+              "name": "message",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2144,
+        2112
+      ],
+      "id": "796595e1-7321-4d4e-bc4e-85a6f4e5b17e",
+      "name": "set audio message1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "007dba77-c366-4dc7-ab01-ad9090846b6d",
+              "leftValue": "={{ $('dados').item.json.FromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        1520
+      ],
+      "id": "7cad585e-f67e-49e0-829f-262a4f07f7c0",
+      "name": "from me?1"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $json.instance }}",
+        "messageId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        144,
+        2240
+      ],
+      "id": "68bd172a-9d82-4ba8-8c47-0b87f5d3b48c",
+      "name": "Obter m dia em base",
+      "credentials": {
+        "evolutionApi": {
+          "id": "Hvs2xgPme5WfvoYN",
+          "name": "Evolution account ponto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "mimeType": "image/jpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        432,
+        2240
+      ],
+      "id": "dc3d9e13-cbfb-4361-8b5b-0ca894da661d",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=analise a imagem e de detalhes do que tem nela, sem explicar oque pode ser apenas descreva oque aparece\n\n\no usuario que enviou a mensagem disse: {{ $('dados').item.json['image message'] || \"Não Disse nada.\" }}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        2208
+      ],
+      "id": "43490c77-0bd8-4f05-aa98-bf23a5b669e6",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "s11xMeJOzBDiKnlE",
+          "name": "Google Gemini(PaLM) Api Cloud Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db0fcea7-ec4f-4a49-b942-687cac42c4b4",
+              "name": "message",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        2208
+      ],
+      "id": "1b19fa06-3d1d-4643-a02d-32cffb8147e6",
+      "name": "image message"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1uW3hu9LR_d9ayyHf4IK1svrMAg-DEcxwQwzRYVXITec",
+          "mode": "list",
+          "cachedResultName": "Planilha sem título222",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uW3hu9LR_d9ayyHf4IK1svrMAg-DEcxwQwzRYVXITec/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 689151834,
+          "mode": "list",
+          "cachedResultName": "Folha1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uW3hu9LR_d9ayyHf4IK1svrMAg-DEcxwQwzRYVXITec/edit#gid=689151834"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        4480,
+        2032
+      ],
+      "id": "3d537942-89ca-49bc-89ce-e711afbec46b",
+      "name": "base de conhecimento",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7cXTO3b0zBpRV1Ac",
+          "name": "Google cloud todos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "365f118b-eca1-4da9-aa7b-4ad57faf5378",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        1520
+      ],
+      "id": "9b90df22-48b4-45fc-90cc-74bac64c85f5",
+      "name": "Webhook",
+      "webhookId": "365f118b-eca1-4da9-aa7b-4ad57faf5378"
+    },
+    {
+      "id": "da093535-42e6-474b-9fd3-d42cf891b291",
+      "name": "Preparar Log (Suporte)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        1120
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nconst dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(dados.id)}, ${esc(`${dados.instance}|${dados.remotejid}`)}, ${esc(dados.pushName)}, TRUE, ${esc(text)}, now())\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn [{ json: { sql_query: sqlQuery } }];"
+      },
+      "notes": "Roda em paralelo com \"criar chave block\", sem alterar o fluxo existente. Grava toda mensagem enviada por VOCÊ (suporte) na tabela support_messages, para depois virar base de conhecimento."
+    },
+    {
+      "id": "3a8316c1-8aa0-41d2-8080-0fa158062592",
+      "name": "Preparar Log (Cliente)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        1712
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nconst dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(dados.id)}, ${esc(`${dados.instance}|${dados.remotejid}`)}, ${esc(dados.pushName)}, FALSE, ${esc(text)}, now())\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn [{ json: { sql_query: sqlQuery } }];"
+      },
+      "notes": "Roda em paralelo com \"buscar chave block\", sem alterar o fluxo existente. Grava toda mensagem enviada pelo CLIENTE na tabela support_messages, para depois virar base de conhecimento."
+    },
+    {
+      "id": "3616d0b3-bd64-4a34-8ae6-3061181cd18e",
+      "name": "Salvar Mensagem (Base de Conhecimento)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2112,
+        1416
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql_query }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "FGJQ1M5xtJWw9N9n",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "40c29cc6-2119-47a5-8811-5a9285cef8d3",
+      "name": "Gerar Base de Conhecimento (Diário)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        2560
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "54c68ae4-4abb-4a78-9146-faa44ed2c2b3",
+      "name": "Definir Janela de Busca",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        2560
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Guarda em que ponto paramos da última vez (sem precisar de tabela extra),\n// usando o \"static data\" do próprio workflow do n8n.\nconst staticData = $getWorkflowStaticData('global');\nconst since = staticData.lastMinedAt || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();\nreturn [{ json: { since } }];"
+      }
+    },
+    {
+      "id": "22d6c13b-57e2-4749-9a81-5970d298ce6a",
+      "name": "Buscar Mensagens Novas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        432,
+        2560
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT id, conversation_id, contact_name, is_support, message_text, message_timestamp\nFROM support_messages\nWHERE message_timestamp > '{{ $json.since }}'::timestamptz\nORDER BY conversation_id, message_timestamp;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "FGJQ1M5xtJWw9N9n",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "02e1fcc6-89cf-4778-a3a1-6c2779aca9b1",
+      "name": "Agrupar em Sessões de Atendimento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        2464
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const rows = $input.all().map((i) => i.json);\nconst SESSION_GAP_MINUTES = 30;\n\nconst byConversation = {};\nfor (const row of rows) {\n  (byConversation[row.conversation_id] ||= []).push(row);\n}\n\nconst sessions = [];\n\nfor (const [conversationId, msgs] of Object.entries(byConversation)) {\n  msgs.sort((a, b) => new Date(a.message_timestamp) - new Date(b.message_timestamp));\n\n  let current = null;\n  for (const m of msgs) {\n    const ts = new Date(m.message_timestamp).getTime();\n    if (!current || ts - current.lastTs > SESSION_GAP_MINUTES * 60 * 1000) {\n      current = {\n        conversation_id: conversationId,\n        contact_name: m.contact_name,\n        lines: [],\n        lastTs: ts,\n      };\n      sessions.push(current);\n    }\n    current.lines.push(`${m.is_support ? 'Suporte' : 'Cliente'}: ${m.message_text}`);\n    current.lastTs = ts;\n  }\n}\n\n// Descarta sessões com uma única mensagem (não há pergunta+resposta pra aprender)\nreturn sessions\n  .filter((s) => s.lines.length >= 2)\n  .map((s) => ({\n    json: {\n      conversation_id: s.conversation_id,\n      contact_name: s.contact_name,\n      transcript: s.lines.join('\\n'),\n    },\n  }));"
+      }
+    },
+    {
+      "id": "8b94dedd-8538-4425-a6c1-965c5d222a35",
+      "name": "Agente Extrator de Perguntas Frequentes",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        880,
+        2464
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.transcript }}",
+        "options": {
+          "systemMessage": "Você é um analista de suporte técnico da Hooked Sistemas (sistema de ponto). Analise o transcript de atendimento abaixo e extraia pares de pergunta e resposta REAIS e ÚTEIS para uma base de conhecimento, reescritos de forma genérica e reutilizável (sem nomes, telefones ou dados do cliente). Ignore saudação, cobrança, mensagens administrativas e assuntos sem conteúdo técnico. Responda SOMENTE com um JSON válido, sem texto antes ou depois, sem marcação de código, no formato exato: {\"items\": [{\"question\": string, \"answer\": string, \"category\": string}]}. Se não houver nenhuma dúvida técnica relevante, responda {\"items\": []}."
+        }
+      }
+    },
+    {
+      "id": "ff1e56eb-f7db-4310-8503-7625e47d6266",
+      "name": "Parsear Respostas da IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        2464
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const responses = $input.all().map((i) => i.json);\nconst sessions = $('Agrupar em Sessões de Atendimento').all().map((i) => i.json);\n\nconst output = [];\n\nfor (let i = 0; i < responses.length; i++) {\n  const session = sessions[i];\n  const raw = responses[i]?.output || '{\"items\": []}';\n  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();\n\n  let parsed;\n  try {\n    parsed = JSON.parse(cleaned);\n  } catch (e) {\n    parsed = { items: [] };\n  }\n\n  const items = Array.isArray(parsed.items) ? parsed.items : [];\n  for (const qa of items) {\n    if (!qa.question || !qa.answer) continue;\n    output.push({\n      json: {\n        question: String(qa.question).trim(),\n        answer: String(qa.answer).trim(),\n        category: qa.category || 'geral',\n        source_conversation_id: session.conversation_id,\n      },\n    });\n  }\n}\n\nreturn output;"
+      }
+    },
+    {
+      "id": "02ca91e3-e0b1-46f5-b2bf-5b7dcb8ec86d",
+      "name": "Salvar Pergunta e Resposta (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1328,
+        2464
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "SUBSTITUA_PELO_ID_DA_SUA_PLANILHA",
+          "mode": "list",
+          "cachedResultName": "Substitua pela sua planilha de Perguntas e Respostas"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Folha1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "question": "={{ $json.question }}",
+            "answer": "={{ $json.answer }}",
+            "category": "={{ $json.category }}"
+          },
+          "matchingColumns": [
+            "question"
+          ],
+          "schema": [
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answer",
+              "displayName": "answer",
+              "required": false,
+              "defaultMatch": false,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7cXTO3b0zBpRV1Ac",
+          "name": "Google cloud todos"
+        }
+      },
+      "notes": "IMPORTANTE: crie sua planilha \"Perguntas e Respostas\" (com colunas question, answer, category na primeira linha) e, depois de importar, abra este node e selecione o documento/aba corretos no seletor — os valores aqui são só placeholder."
+    },
+    {
+      "id": "73c52524-4875-4e82-af42-bee5f658f1a3",
+      "name": "Atualizar Marca D'água",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        2688
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const rows = $('Buscar Mensagens Novas').all().map((i) => i.json);\nif (rows.length === 0) return [];\n\nconst maxTs = rows.reduce((max, r) => {\n  const t = new Date(r.message_timestamp).getTime();\n  return t > max ? t : max;\n}, 0);\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.lastMinedAt = new Date(maxTs).toISOString();\n\nreturn [{ json: { lastMinedAt: staticData.lastMinedAt } }];"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "dados": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agente Extrator de Perguntas Frequentes",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "criar chave block": {
+      "main": [
+        [
+          {
+            "node": "inserir mensagem de atendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar chave block": {
+      "main": [
+        [
+          {
+            "node": "is bloked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is bloked?": {
+      "main": [
+        [
+          {
+            "node": "inserir mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lista temporaria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "inserir mensagem de atendente",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "inserir mensagem",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lista temporaria": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "buscar lista temporaria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar lista temporaria": {
+      "main": [
+        [
+          {
+            "node": "ultima mensagem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ultima mensagem?": {
+      "main": [
+        [
+          {
+            "node": "deletar lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deletar lista": {
+      "main": [
+        [
+          {
+            "node": "mensagem final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mensagem final": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "set text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Obter m dia em base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Obter m dia em base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set text message1": {
+      "main": [
+        [
+          {
+            "node": "message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message1": {
+      "main": [
+        [
+          {
+            "node": "from me?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter m dia em base64": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "set audio message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set audio message1": {
+      "main": [
+        [
+          {
+            "node": "message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "from me?1": {
+      "main": [
+        [
+          {
+            "node": "criar chave block",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Log (Suporte)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buscar chave block",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Log (Cliente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter m dia em base": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "image message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "image message": {
+      "main": [
+        [
+          {
+            "node": "message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "base de conhecimento": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        []
+      ]
+    },
+    "Preparar Log (Suporte)": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem (Base de Conhecimento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Log (Cliente)": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem (Base de Conhecimento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Base de Conhecimento (Diário)": {
+      "main": [
+        [
+          {
+            "node": "Definir Janela de Busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir Janela de Busca": {
+      "main": [
+        [
+          {
+            "node": "Buscar Mensagens Novas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Mensagens Novas": {
+      "main": [
+        [
+          {
+            "node": "Agrupar em Sessões de Atendimento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atualizar Marca D'água",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar em Sessões de Atendimento": {
+      "main": [
+        [
+          {
+            "node": "Agente Extrator de Perguntas Frequentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Extrator de Perguntas Frequentes": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respostas da IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respostas da IA": {
+      "main": [
+        [
+          {
+            "node": "Salvar Pergunta e Resposta (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5ea8b3eb-05c2-4ed3-bdcf-917186760ed1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "eb15152d6161cb51000bcd442f4295aa9154d6d42767aa66c0b8b9a42c2f090c"
+  },
+  "id": "pCiMlBUbtPaMI9Dy",
+  "tags": []
+}
