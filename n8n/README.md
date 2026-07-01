@@ -1,115 +1,97 @@
 # Suporte - Base de Conhecimento a partir das conversas do bot
 
-Este diretório contém dois workflows do n8n que, **juntos**, transformam as
-conversas reais entre o suporte e os clientes (capturadas hoje pelo bot de
-atendimento em Evolution API) em uma base de conhecimento pronta para ser
-usada por RAG (busca semântica) em outro bot.
+Este diretório contém dois workflows do n8n que, **juntos**, capturam as
+conversas reais entre o suporte e os clientes (via Evolution API) e deixam
+você perguntar, por chat com IA, quais são as dúvidas mais frequentes.
 
-Nada disso mexe no workflow do bot de atendimento existente além de um único
-node novo (explicado abaixo). São dois workflows separados, cada um com sua
-responsabilidade:
-
-| Workflow | O que faz | Quando roda |
+| Workflow | O que faz | Como é acionado |
 |---|---|---|
-| `1-captura-mensagens-suporte.json` | Recebe cada mensagem (sua e do cliente) e grava em `support_messages` | Tempo real, 1x por mensagem |
-| `2-gerar-base-conhecimento.json` | Agrupa as conversas do dia em sessões, usa IA para extrair pares de pergunta/resposta, gera embedding e salva/atualiza em `knowledge_base` | 1x por dia (agendado, 02:00) |
+| `1-captura-mensagens-suporte.json` | Recebe cada mensagem (sua e do cliente) e grava em `support_messages` | Webhook, em tempo real, 1x por mensagem |
+| `2-consultar-duvidas-frequentes.json` | Abre um chat onde você pergunta (ex: "quais as dúvidas mais frequentes esse mês?") e uma IA (Gemini) analisa as mensagens dos clientes e responde | Chat, sob demanda |
 
 ## Pré-requisitos
 
-1. **Postgres com a extensão `pgvector`** instalada (`CREATE EXTENSION vector;`).
-   Rode `n8n/sql/schema.sql` uma vez no seu banco antes de tudo — ele cria as
-   tabelas `support_messages` e `knowledge_base`. Testado localmente em
-   Postgres 16 + pgvector 0.6.
+1. Uma tabela Postgres — rode `n8n/sql/schema.sql` uma vez no seu banco (cria
+   `support_messages`).
 2. Uma credencial **Postgres** cadastrada no n8n.
-3. Uma credencial **OpenAI API** cadastrada no n8n (usada para extrair as
-   perguntas/respostas do transcript e para gerar os embeddings).
+3. Uma credencial **Google Gemini (PaLM) API** cadastrada no n8n (a mesma que
+   você já usa no bot de atendimento).
 
 ## Passo a passo
 
 ### 1. Importar os workflows
 
-No n8n: `Workflows > Import from File` e importe os dois arquivos desta
-pasta. Depois de importar, abra cada node `Postgres` e `HTTP Request` e
-selecione suas próprias credenciais (elas não vêm preenchidas — os IDs no
-JSON são só placeholders).
+`Workflows > Import from File` e importe os dois arquivos desta pasta.
+Depois de importar, abra cada node **Postgres** e o node **Google Gemini Chat
+Model** e selecione suas próprias credenciais (os IDs no JSON são só
+placeholders, não vêm preenchidos).
 
-### 2. Ligar a captura ao bot de atendimento existente
+### 2. Ligar a captura ao fluxo do bot de atendimento
 
-O workflow `1-captura-mensagens-suporte.json` começa com um node **Execute
-Workflow Trigger** — ele não escuta o WhatsApp diretamente, ele é chamado
-pelo próprio workflow do bot de atendimento. Isso evita duplicar webhook no
-Evolution API ou mexer na configuração do provedor.
+O workflow `1-captura-mensagens-suporte.json` tem seu **próprio Webhook**
+(node "Receber Mensagem (Evolution API)"), então ele recebe o mesmo formato
+de payload que o seu bot principal recebe (`messages.upsert` da Evolution
+API, com os dados em `body.data`).
 
-No workflow do **bot de atendimento** (o que já existe), adicione um node
-**Execute Workflow** logo depois do node que recebe o payload do Evolution
-API (`messages.upsert`), com:
+Para ele também receber as mensagens, você tem duas opções:
 
-- Workflow: `Suporte - Captura de Mensagens (Base de Conhecimento)`
-- Mode: **Execute in background / fire-and-forget** (não precisa esperar
-  resposta, é só um log)
-- Input: passar o mesmo item recebido do webhook do Evolution API
+- **Opção A (mais simples):** se o seu provedor/instância Evolution API
+  permitir configurar mais de uma URL de webhook para o mesmo evento,
+  adicione a URL deste novo workflow como uma segunda URL.
+- **Opção B:** no workflow do bot de atendimento já existente, logo depois do
+  node "Webhook" original, adicione um node **HTTP Request** (POST) apontando
+  para a URL deste novo webhook, repassando o mesmo `body` recebido. Assim
+  toda mensagem que chega no bot principal é espelhada para cá também, sem
+  depender de configuração no Evolution API.
 
-Isso garante que **toda mensagem, sua e do cliente**, é espelhada para este
-fluxo, incluindo `key.fromMe` (`true` = você/suporte, `false` = cliente) —
-é esse campo que o node "Normalizar e Preparar Insert" usa para marcar
-`is_support`.
+Ative o workflow (toggle "Active") para o webhook ficar no ar.
 
-### 3. Deixar o segundo workflow agendado
+### 3. Usar o chat de dúvidas frequentes
 
-`2-gerar-base-conhecimento.json` já vem com um **Schedule Trigger** (todo dia
-às 02:00). Ative o workflow (toggle "Active") para ele rodar sozinho.
+Ative também o workflow `2-consultar-duvidas-frequentes.json` e abra o chat
+dele (botão "Chat" no editor do n8n, ou a URL pública do Chat Trigger). Pergunte,
+por exemplo:
+
+- "Quais são as 5 dúvidas mais comuns dos clientes essa semana?"
+- "Os clientes têm reclamado de quê?"
+- "Como o suporte costuma responder quando perguntam sobre justificar falta?"
+
+O agente busca as últimas 500 mensagens **enviadas pelos clientes** (não as
+suas) em `support_messages`, e a IA agrupa as parecidas e resume.
 
 ## Como funciona por dentro
 
 **Workflow 1** — por mensagem:
-`Execute Workflow Trigger → Code (normaliza texto e monta o INSERT) → IF (só
-segue se tiver texto) → Postgres (grava em support_messages)`. Mensagens sem
-texto (áudio, figurinha, reação) são descartadas nesse IF.
+`Webhook → Code (normaliza o payload e monta o INSERT) → IF "Tem Texto?"
+(descarta áudio/figurinha sem legenda) → IF "Suporte ou Cliente?" (separa
+pelo campo fromMe: true = você, false = cliente) → Postgres (grava em
+support_messages, já marcando is_support corretamente)`.
 
-**Workflow 2** — uma vez por dia:
-1. Busca em `support_messages` tudo que ainda não foi processado.
-2. Agrupa as mensagens por conversa em "sessões de atendimento" (uma sessão
-   termina quando passam mais de 30 minutos sem mensagem — ajustável na
-   constante `SESSION_GAP_MINUTES` do node "Agrupar em Sessões de
-   Atendimento").
-3. Manda o transcript de cada sessão para a OpenAI (`gpt-4o-mini`), pedindo
-   para extrair pares de pergunta/resposta genéricos e reutilizáveis
-   (ignorando saudação, cobrança, dados do cliente).
-4. Para cada pergunta extraída, gera um embedding (`text-embedding-3-small`)
-   e faz um "upsert por similaridade": se já existir uma pergunta muito
-   parecida (distância de cosseno < 0.15) na base, só incrementa o campo
-   `frequency`; senão, insere uma linha nova. É esse contador de `frequency`
-   que mostra **quais são as maiores dúvidas** dos clientes.
-5. Marca as mensagens da sessão como processadas — mesmo quando a sessão não
-   gerou nenhuma pergunta útil — para não reprocessar o mesmo histórico
-   todas as noites.
+O segundo IF ("Suporte ou Cliente?") hoje leva as duas saídas para o mesmo
+node de insert — a coluna `is_support` já vem certa desde o node de
+normalização. Ele foi deixado explícito no fluxo (em vez de eliminado) para
+você poder plugar ali, no futuro, uma ação diferente por tipo de mensagem
+(por exemplo, disparar um alerta só quando é o cliente que escreve).
 
-## Tabela `knowledge_base` (o que o outro bot vai consultar)
+**Workflow 2** — sob demanda, quando você pergunta no chat:
+`Chat Trigger → Postgres (busca as últimas 500 mensagens de clientes) → Code
+(formata como lista numerada com data) → AI Agent (Gemini + memória de
+conversa), que recebe essa lista no system message e responde sua pergunta`.
 
-```sql
-SELECT question, answer, category, frequency
-FROM knowledge_base
-ORDER BY embedding <=> '[...]'::vector  -- embedding da pergunta do cliente
-LIMIT 3;
-```
-
-Colunas: `question`, `answer`, `category`, `confidence` (alta/média/baixa,
-segundo a IA), `frequency` (quantas vezes uma dúvida parecida apareceu),
-`embedding` (vector(1536), para busca semântica), `source_conversation_id`,
-`first_seen`, `last_seen`.
+Não há geração de embeddings nem tabela separada de FAQ — a IA lê o histórico
+bruto de mensagens do cliente a cada pergunta seu e faz o agrupamento/análise
+na hora. Isso é mais simples de manter, mas cada pergunta no chat manda até
+500 mensagens de contexto para o Gemini; se o volume de mensagens crescer
+muito, considere reduzir o `LIMIT 500` da query ou filtrar por período
+(`WHERE message_timestamp > now() - interval '30 days'`).
 
 ## Ajustes que você provavelmente vai querer revisar
 
-- **Limiar de similaridade (0.15)**: está nos nodes "Montar Query de Upsert"
-  (workflow 2). Diminua para exigir mais parecença antes de agrupar como
-  "mesma pergunta"; aumente para agrupar variações de forma mais agressiva.
-- **Prompt de extração**: está no node "Extrair Perguntas e Respostas (IA)".
-  Ajuste o tom/categorias conforme o vocabulário do sistema de ponto da
-  Hooked.
-- **Modelo de IA**: `gpt-4o-mini` é o padrão (custo baixo). Troque no mesmo
-  node se preferir outro modelo.
-- **Falha parcial na IA**: se a chamada para a OpenAI falhar no meio do
-  lote da noite, a execução inteira para e nada daquele lote é marcado como
-  processado — na próxima execução ele é reprocessado do zero. É um
-  comportamento seguro (não perde dado), mas ineficiente; se preferir
-  processar parcialmente, ative "Continue On Fail" no node HTTP Request.
+- **Quantas mensagens de cliente entram no contexto da IA**: `LIMIT 500` no
+  node "Buscar Mensagens de Clientes" (workflow 2).
+- **Modelo do Gemini**: `models/gemini-2.0-flash` no node "Google Gemini Chat
+  Model". Troque se preferir outro modelo da família Gemini.
+- **Tom/instruções da IA**: `systemMessage` no node "Agente de Perguntas
+  Frequentes".
+- **Caminho do webhook**: `captura-suporte` no node "Receber Mensagem
+  (Evolution API)" (workflow 1) — mude se esse path já estiver em uso.

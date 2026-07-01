@@ -2,21 +2,25 @@
   "name": "Suporte - Captura de Mensagens (Base de Conhecimento)",
   "nodes": [
     {
-      "id": "86b5600f-bb32-4ef3-af60-a69f1b281742",
-      "name": "Recebe Mensagem do Bot de Suporte",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
+      "id": "5f1eaa9f-7bad-4385-a1a5-26213f9da242",
+      "name": "Receber Mensagem (Evolution API)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
         240,
         300
       ],
+      "webhookId": "83ace1f8-2baf-42eb-8569-e248e81f3841",
       "parameters": {
-        "inputSource": "passthrough"
+        "httpMethod": "POST",
+        "path": "captura-suporte",
+        "responseMode": "onReceived",
+        "options": {}
       },
-      "notes": "Adicione um node \"Execute Workflow\" no final do workflow do bot de atendimento (Evolution API), apontando para este workflow, em modo \"fire and forget\", passando o mesmo item recebido do webhook do Evolution. Assim este fluxo roda em paralelo sem mexer no bot principal."
+      "notes": "Configure o Evolution API (ou um passo do workflow do bot principal) para também enviar (encaminhar) o mesmo payload de \"messages.upsert\" para a URL deste webhook, além de para o bot de atendimento. Assim este fluxo roda em paralelo, só para registrar as mensagens, sem interferir na resposta ao cliente."
     },
     {
-      "id": "9d3cc4ce-331c-4c9d-a56e-4892db0f9860",
+      "id": "cba22fc8-72ff-4091-80aa-56912980f556",
       "name": "Normalizar e Preparar Insert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -27,12 +31,12 @@
       "parameters": {
         "mode": "runOnceForEachItem",
         "language": "javaScript",
-        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nfunction extractText(message) {\n  if (!message) return '';\n  return (\n    message.conversation ||\n    message.extendedTextMessage?.text ||\n    message.imageMessage?.caption ||\n    message.videoMessage?.caption ||\n    message.buttonsResponseMessage?.selectedDisplayText ||\n    message.listResponseMessage?.title ||\n    ''\n  ).trim();\n}\n\nconst item = $input.item.json;\nconst data = item.data || item;\nconst key = data.key || {};\nconst msg = data.message || {};\n\nconst messageText = extractText(msg);\nconst messageId = key.id || null;\nconst conversationId = key.remoteJid || null;\nconst contactName = data.pushName || null;\nconst isSupport = key.fromMe === true;\nconst messageTimestamp = data.messageTimestamp\n  ? new Date(Number(data.messageTimestamp) * 1000).toISOString()\n  : new Date().toISOString();\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(messageId)}, ${esc(conversationId)}, ${esc(contactName)}, ${isSupport ? 'TRUE' : 'FALSE'}, ${esc(messageText)}, ${esc(messageTimestamp)})\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn {\n  json: {\n    message_id: messageId,\n    conversation_id: conversationId,\n    contact_name: contactName,\n    is_support: isSupport,\n    message_text: messageText,\n    message_timestamp: messageTimestamp,\n    sql_query: sqlQuery,\n  },\n};"
+        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nfunction extractText(message) {\n  if (!message) return '';\n  return (\n    message.conversation ||\n    message.extendedTextMessage?.text ||\n    message.imageMessage?.caption ||\n    message.videoMessage?.caption ||\n    message.buttonsResponseMessage?.selectedDisplayText ||\n    message.listResponseMessage?.title ||\n    ''\n  ).trim();\n}\n\n// O node Webhook do n8n entrega a requisição crua: { headers, params, query, body }.\n// Os dados da mensagem do Evolution API vêm dentro de body.data.\nconst item = $input.item.json;\nconst body = item.body || item;\nconst data = body.data || {};\nconst key = data.key || {};\nconst msg = data.message || {};\n\nconst messageText = extractText(msg);\nconst messageId = key.id || null;\nconst conversationId = key.remoteJid || null;\nconst contactName = data.pushName || null;\nconst isSupport = key.fromMe === true;\nconst messageTimestamp = data.messageTimestamp\n  ? new Date(Number(data.messageTimestamp) * 1000).toISOString()\n  : new Date().toISOString();\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(messageId)}, ${esc(conversationId)}, ${esc(contactName)}, ${isSupport ? 'TRUE' : 'FALSE'}, ${esc(messageText)}, ${esc(messageTimestamp)})\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn {\n  json: {\n    message_id: messageId,\n    conversation_id: conversationId,\n    contact_name: contactName,\n    is_support: isSupport,\n    message_text: messageText,\n    message_timestamp: messageTimestamp,\n    sql_query: sqlQuery,\n  },\n};"
       }
     },
     {
-      "id": "2ddadfc9-4c54-41df-9a3f-0d191af80d6a",
-      "name": "Somente Texto?",
+      "id": "6be779b7-4963-41f1-96b4-beb2a82f2029",
+      "name": "Tem Texto?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -48,7 +52,7 @@
           },
           "conditions": [
             {
-              "id": "e73b6843-6cfd-4f47-88d6-f306577213b7",
+              "id": "73b570f1-31f1-4bf5-b59f-eee3c2874075",
               "leftValue": "={{ $json.message_text }}",
               "rightValue": "",
               "operator": {
@@ -64,13 +68,47 @@
       }
     },
     {
-      "id": "bc9a7b4c-c0bf-4f28-9b3b-373ab74bbaa5",
+      "id": "0bf38465-e269-47f2-a1b1-29c28771f553",
+      "name": "Suporte ou Cliente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "17fe435d-0abb-43c5-be83-7f02119c7f06",
+              "leftValue": "={{ $json.is_support }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Saída TRUE = mensagem enviada por você (suporte). Saída FALSE = mensagem enviada pelo cliente. Hoje as duas caem no mesmo insert (a coluna is_support já vem certa do node anterior) — o split fica aqui pronto caso você queira, no futuro, tratar mensagem de cliente de forma diferente (ex: disparar um alerta)."
+    },
+    {
+      "id": "788cb163-155b-40c3-8d0b-79285eb26a94",
       "name": "Salvar Mensagem",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        900,
-        220
+        1140,
+        300
       ],
       "parameters": {
         "operation": "executeQuery",
@@ -86,7 +124,7 @@
     }
   ],
   "connections": {
-    "Recebe Mensagem do Bot de Suporte": {
+    "Receber Mensagem (Evolution API)": {
       "main": [
         [
           {
@@ -101,14 +139,26 @@
       "main": [
         [
           {
-            "node": "Somente Texto?",
+            "node": "Tem Texto?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Somente Texto?": {
+    "Tem Texto?": {
+      "main": [
+        [
+          {
+            "node": "Suporte ou Cliente?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Suporte ou Cliente?": {
       "main": [
         [
           {
@@ -117,7 +167,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Salvar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
