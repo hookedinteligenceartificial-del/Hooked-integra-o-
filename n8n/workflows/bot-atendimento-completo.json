@@ -844,7 +844,7 @@
       "webhookId": "365f118b-eca1-4da9-aa7b-4ad57faf5378"
     },
     {
-      "id": "da093535-42e6-474b-9fd3-d42cf891b291",
+      "id": "a01464c0-62f2-4324-8c7b-715ccbd058d0",
       "name": "Preparar Log (Suporte)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -855,12 +855,12 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nconst dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(dados.id)}, ${esc(`${dados.instance}|${dados.remotejid}`)}, ${esc(dados.pushName)}, TRUE, ${esc(text)}, now())\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn [{ json: { sql_query: sqlQuery } }];"
+        "jsCode": "const dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst entry = {\n  message_id: dados.id || null,\n  conversation_id: `${dados.instance}|${dados.remotejid}`,\n  contact_name: dados.pushName || null,\n  is_support: true,\n  message_text: text,\n  message_timestamp: new Date().toISOString(),\n};\n\nreturn [{ json: { log_entry: JSON.stringify(entry) } }];"
       },
-      "notes": "Roda em paralelo com \"criar chave block\", sem alterar o fluxo existente. Grava toda mensagem enviada por VOCÊ (suporte) na tabela support_messages, para depois virar base de conhecimento."
+      "notes": "Roda em paralelo com \"criar chave block\", sem alterar o fluxo existente. Só monta o texto que vai pro Redis — nada de chamada a banco aqui, pra nunca atrasar/travar o atendimento ao vivo."
     },
     {
-      "id": "3a8316c1-8aa0-41d2-8080-0fa158062592",
+      "id": "cf497ab9-e9e9-423a-9b9d-0e9f46a47862",
       "name": "Preparar Log (Cliente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -871,33 +871,35 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nconst dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES (${esc(dados.id)}, ${esc(`${dados.instance}|${dados.remotejid}`)}, ${esc(dados.pushName)}, FALSE, ${esc(text)}, now())\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn [{ json: { sql_query: sqlQuery } }];"
+        "jsCode": "const dados = $('dados').item.json;\nconst text = $('message1').item.json.message || '';\n\nconst entry = {\n  message_id: dados.id || null,\n  conversation_id: `${dados.instance}|${dados.remotejid}`,\n  contact_name: dados.pushName || null,\n  is_support: false,\n  message_text: text,\n  message_timestamp: new Date().toISOString(),\n};\n\nreturn [{ json: { log_entry: JSON.stringify(entry) } }];"
       },
-      "notes": "Roda em paralelo com \"buscar chave block\", sem alterar o fluxo existente. Grava toda mensagem enviada pelo CLIENTE na tabela support_messages, para depois virar base de conhecimento."
+      "notes": "Roda em paralelo com \"buscar chave block\", sem alterar o fluxo existente. Só monta o texto que vai pro Redis — nada de chamada a banco aqui, pra nunca atrasar/travar o atendimento ao vivo."
     },
     {
-      "id": "3616d0b3-bd64-4a34-8ae6-3061181cd18e",
-      "name": "Salvar Mensagem (Base de Conhecimento)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
+      "id": "212fb1c9-bffd-4532-bf70-652974ff5697",
+      "name": "Guardar Mensagem no Log (Redis)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
       "position": [
         2112,
         1416
       ],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql_query }}",
-        "options": {}
+        "operation": "push",
+        "list": "hooked_suporte_log_mensagens",
+        "messageData": "={{ $json.log_entry }}",
+        "tail": true
       },
       "credentials": {
-        "postgres": {
-          "id": "FGJQ1M5xtJWw9N9n",
-          "name": "Postgres account"
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
         }
-      }
+      },
+      "notes": "Mesma operação (push numa lista) que o node \"lista temporaria\" já existente usa — rápida e comprovadamente estável nesse workflow. O job noturno lê e limpa essa lista."
     },
     {
-      "id": "40c29cc6-2119-47a5-8811-5a9285cef8d3",
+      "id": "cf342de4-4cea-4855-af9c-1fddd5e26b70",
       "name": "Gerar Base de Conhecimento (Diário)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -917,44 +919,64 @@
       }
     },
     {
-      "id": "54c68ae4-4abb-4a78-9146-faa44ed2c2b3",
-      "name": "Definir Janela de Busca",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "62d6463f-a26e-4801-9bbf-a0fdfff241dd",
+      "name": "Buscar Mensagens do Log (Redis)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
       "position": [
         208,
         2560
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "// Guarda em que ponto paramos da última vez (sem precisar de tabela extra),\n// usando o \"static data\" do próprio workflow do n8n.\nconst staticData = $getWorkflowStaticData('global');\nconst since = staticData.lastMinedAt || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();\nreturn [{ json: { since } }];"
+        "operation": "get",
+        "propertyName": "messages",
+        "key": "hooked_suporte_log_mensagens",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
       }
     },
     {
-      "id": "22d6c13b-57e2-4749-9a81-5970d298ce6a",
-      "name": "Buscar Mensagens Novas",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
+      "id": "7aa34060-1608-4749-b14e-40dd93bd58d7",
+      "name": "Tem Mensagens Novas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
         432,
         2560
       ],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT id, conversation_id, contact_name, is_support, message_text, message_timestamp\nFROM support_messages\nWHERE message_timestamp > '{{ $json.since }}'::timestamptz\nORDER BY conversation_id, message_timestamp;",
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "fc27a34b-51d8-4d74-a2b4-c6a5b88fa665",
+              "leftValue": "={{ $json.messages }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
         "options": {}
-      },
-      "credentials": {
-        "postgres": {
-          "id": "FGJQ1M5xtJWw9N9n",
-          "name": "Postgres account"
-        }
       }
     },
     {
-      "id": "02e1fcc6-89cf-4778-a3a1-6c2779aca9b1",
-      "name": "Agrupar em Sessões de Atendimento",
+      "id": "482e19d7-3551-4583-be26-7d874ea4e69e",
+      "name": "Preparar Inserts em Lote",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -964,16 +986,74 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const rows = $input.all().map((i) => i.json);\nconst SESSION_GAP_MINUTES = 30;\n\nconst byConversation = {};\nfor (const row of rows) {\n  (byConversation[row.conversation_id] ||= []).push(row);\n}\n\nconst sessions = [];\n\nfor (const [conversationId, msgs] of Object.entries(byConversation)) {\n  msgs.sort((a, b) => new Date(a.message_timestamp) - new Date(b.message_timestamp));\n\n  let current = null;\n  for (const m of msgs) {\n    const ts = new Date(m.message_timestamp).getTime();\n    if (!current || ts - current.lastTs > SESSION_GAP_MINUTES * 60 * 1000) {\n      current = {\n        conversation_id: conversationId,\n        contact_name: m.contact_name,\n        lines: [],\n        lastTs: ts,\n      };\n      sessions.push(current);\n    }\n    current.lines.push(`${m.is_support ? 'Suporte' : 'Cliente'}: ${m.message_text}`);\n    current.lastTs = ts;\n  }\n}\n\n// Descarta sessões com uma única mensagem (não há pergunta+resposta pra aprender)\nreturn sessions\n  .filter((s) => s.lines.length >= 2)\n  .map((s) => ({\n    json: {\n      conversation_id: s.conversation_id,\n      contact_name: s.contact_name,\n      transcript: s.lines.join('\\n'),\n    },\n  }));"
+        "jsCode": "function esc(s) {\n  if (s === null || s === undefined) return 'NULL';\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nconst mensagens = $json.messages || [];\n\nconst entries = mensagens\n  .map((s) => {\n    try {\n      return JSON.parse(s);\n    } catch (e) {\n      return null;\n    }\n  })\n  .filter((e) => e && e.message_text);\n\nif (entries.length === 0) {\n  return [{ json: { sql_query: null, count: 0, entries: [] } }];\n}\n\nconst values = entries\n  .map(\n    (e) =>\n      `(${esc(e.message_id)}, ${esc(e.conversation_id)}, ${esc(e.contact_name)}, ${e.is_support ? 'TRUE' : 'FALSE'}, ${esc(e.message_text)}, ${esc(e.message_timestamp)})`\n  )\n  .join(',\\n');\n\nconst sqlQuery = `INSERT INTO support_messages (message_id, conversation_id, contact_name, is_support, message_text, message_timestamp)\nVALUES\n${values}\nON CONFLICT (message_id) DO NOTHING;`;\n\nreturn [{ json: { sql_query: sqlQuery, count: entries.length, entries } }];"
       }
     },
     {
-      "id": "8b94dedd-8538-4425-a6c1-965c5d222a35",
+      "id": "f0ef9001-0375-4f4c-b367-6833fa3a65ac",
+      "name": "Arquivar Mensagens (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        2464
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql_query }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "FGJQ1M5xtJWw9N9n",
+          "name": "Postgres account"
+        }
+      },
+      "notes": "Roda 1x por dia, isolado do webhook do bot — não compete com a conexão do Postgres Chat Memory durante o atendimento ao vivo."
+    },
+    {
+      "id": "07f61c84-5ac3-42d4-b131-5531dea698d0",
+      "name": "Limpar Log (Redis)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        2464
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "hooked_suporte_log_mensagens"
+      },
+      "credentials": {
+        "redis": {
+          "id": "fOL3oWGsYTymUvE2",
+          "name": "Redis account"
+        }
+      },
+      "notes": "Só limpa depois que o arquivamento em Postgres deu certo — se o Postgres falhar, a lista continua no Redis e a próxima execução tenta de novo, sem perder mensagem."
+    },
+    {
+      "id": "7136e1c8-9f10-4fd5-9b57-85c2aef2e31f",
+      "name": "Agrupar em Sessões de Atendimento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        2464
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const rows = $('Preparar Inserts em Lote').item.json.entries;\nconst SESSION_GAP_MINUTES = 30;\n\nconst byConversation = {};\nfor (const row of rows) {\n  (byConversation[row.conversation_id] ||= []).push(row);\n}\n\nconst sessions = [];\n\nfor (const [conversationId, msgs] of Object.entries(byConversation)) {\n  msgs.sort((a, b) => new Date(a.message_timestamp) - new Date(b.message_timestamp));\n\n  let current = null;\n  for (const m of msgs) {\n    const ts = new Date(m.message_timestamp).getTime();\n    if (!current || ts - current.lastTs > SESSION_GAP_MINUTES * 60 * 1000) {\n      current = {\n        conversation_id: conversationId,\n        contact_name: m.contact_name,\n        lines: [],\n        lastTs: ts,\n      };\n      sessions.push(current);\n    }\n    current.lines.push(`${m.is_support ? 'Suporte' : 'Cliente'}: ${m.message_text}`);\n    current.lastTs = ts;\n  }\n}\n\n// Descarta sessões com uma única mensagem (não há pergunta+resposta pra aprender)\nreturn sessions\n  .filter((s) => s.lines.length >= 2)\n  .map((s) => ({\n    json: {\n      conversation_id: s.conversation_id,\n      contact_name: s.contact_name,\n      transcript: s.lines.join('\\n'),\n    },\n  }));"
+      }
+    },
+    {
+      "id": "2146c992-e032-401a-af9f-1eaa271cc9f2",
       "name": "Agente Extrator de Perguntas Frequentes",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        880,
+        1552,
         2464
       ],
       "parameters": {
@@ -985,12 +1065,12 @@
       }
     },
     {
-      "id": "ff1e56eb-f7db-4310-8503-7625e47d6266",
+      "id": "ff0f9ac2-8c08-44d5-bf34-02aca567ef08",
       "name": "Parsear Respostas da IA",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1104,
+        1776,
         2464
       ],
       "parameters": {
@@ -1000,12 +1080,12 @@
       }
     },
     {
-      "id": "02ca91e3-e0b1-46f5-b2bf-5b7dcb8ec86d",
+      "id": "1050134c-05a3-4fae-8e74-f9fceb030071",
       "name": "Salvar Pergunta e Resposta (Sheets)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        1328,
+        2000,
         2464
       ],
       "parameters": {
@@ -1067,22 +1147,7 @@
           "name": "Google cloud todos"
         }
       },
-      "notes": "IMPORTANTE: crie sua planilha \"Perguntas e Respostas\" (com colunas question, answer, category na primeira linha) e, depois de importar, abra este node e selecione o documento/aba corretos no seletor — os valores aqui são só placeholder."
-    },
-    {
-      "id": "73c52524-4875-4e82-af42-bee5f658f1a3",
-      "name": "Atualizar Marca D'água",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        656,
-        2688
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
-        "jsCode": "const rows = $('Buscar Mensagens Novas').all().map((i) => i.json);\nif (rows.length === 0) return [];\n\nconst maxTs = rows.reduce((max, r) => {\n  const t = new Date(r.message_timestamp).getTime();\n  return t > max ? t : max;\n}, 0);\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.lastMinedAt = new Date(maxTs).toISOString();\n\nreturn [{ json: { lastMinedAt: staticData.lastMinedAt } }];"
-      }
+      "notes": "IMPORTANTE: crie sua planilha \"Perguntas e Respostas\" (colunas question, answer, category na 1ª linha) e, depois de importar, abra este node e selecione o documento/aba corretos — os valores aqui são só placeholder."
     }
   ],
   "pinData": {},
@@ -1457,7 +1522,7 @@
       "main": [
         [
           {
-            "node": "Salvar Mensagem (Base de Conhecimento)",
+            "node": "Guardar Mensagem no Log (Redis)",
             "type": "main",
             "index": 0
           }
@@ -1468,7 +1533,7 @@
       "main": [
         [
           {
-            "node": "Salvar Mensagem (Base de Conhecimento)",
+            "node": "Guardar Mensagem no Log (Redis)",
             "type": "main",
             "index": 0
           }
@@ -1479,34 +1544,63 @@
       "main": [
         [
           {
-            "node": "Definir Janela de Busca",
+            "node": "Buscar Mensagens do Log (Redis)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Definir Janela de Busca": {
+    "Buscar Mensagens do Log (Redis)": {
       "main": [
         [
           {
-            "node": "Buscar Mensagens Novas",
+            "node": "Tem Mensagens Novas?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Buscar Mensagens Novas": {
+    "Tem Mensagens Novas?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Inserts em Lote",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Preparar Inserts em Lote": {
+      "main": [
+        [
+          {
+            "node": "Arquivar Mensagens (Postgres)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arquivar Mensagens (Postgres)": {
+      "main": [
+        [
+          {
+            "node": "Limpar Log (Redis)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpar Log (Redis)": {
       "main": [
         [
           {
             "node": "Agrupar em Sessões de Atendimento",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Atualizar Marca D'água",
             "type": "main",
             "index": 0
           }
